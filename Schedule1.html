@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<html lang="en">
+<head>
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="cache-control" content="max-age=0" />
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="x-ua-compatible" content="IE=Edge"/>
+<link rel="icon" href="images/favicon.ico" type="image/x-icon"/>
+<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon"/>
+<title>Allocate+ Student</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+
+
+
+<link rel="stylesheet" href="studentUI/css/concat.min.css">
+
+
+<link rel="stylesheet" href="studentUI/css/mobile.min.css">
+
+
+
+<link rel="stylesheet" href="fontawesome/css/v4-shims.css">
+<link rel="stylesheet" href="fontawesome/css/all.css">
+
+
+<script>
+var mobile_licensed=true;
+</script>
+
+
+
+<script>
+var livecal_licensed=true;
+
+</script>
+
+
+<script>
+var student_self_deallocation_on=true
+
+var online_activity_type="Lecture - Online";
+
+var clashable_activity_types = [];
+
+	clashable_activity_types.push("Lecture - Online");
+
+	clashable_activity_types.push("Course Check In");
+
+
+</script>
+
+<script type="text/javascript" src="studentUI/js/concat.min.js"></script>
+
+
+<!-- Google Analytics -->
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-93698210-12"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-93698210-12');
+</script>
+
+<div id="homeEJS" style="display: none">
+
+
+<div class="upper_sec">
+	<h1>Home</h1>
+</div>
+<div class="lower_sec">
+	<div class="profile-holder"></div>
+	<br>
+		[% if(adminHasPowerLoginFunction) { %]
+		<p style="color: red;">You are using Student Allocate with Override to access this student's timetable. All Activity Groups will be displayed in Allocation Adjustment mode. Be aware that this view may not match the student's view.
+		</p>
+		[% } else { %]
+		
+		[%= new_student_welcome_html %]
+		
+		[%= student_welcome_html %]
+		
+		[% } %]
+		
+		[% if(!adminHasPowerLoginFunction) { %]
+		
+		[% if(iCalURL!=null){ %]
+		[%
+			var iCalFullURL = window.location.protocol + '//' + window.location.host + contextPath + iCalURL;
+			var webCalUrl = 'webcal://' + window.location.host + contextPath + iCalURL;
+			var mobileStyle = (isMobile) ? "width: 250px" : "width: 550px";
+			var device = navigator.userAgent;
+			var supportedDevices = ['Mac','iPhone','iPad','iPod'];
+			var showSubscribeButton = false;
+			
+			$.each(supportedDevices, function(i,o) {
+			if(false) { //device.indexOf(o) != -1) {
+					showSubscribeButton = true;
+				}
+			});
+		%]
+		<h2 class="icon-calendar-title"><div class="icon-calendar sprite icon_calendar"></div>Subscribe to your timetable</h2>
+		[% if(showSubscribeButton == true){ %]
+			<p> <button class="btn btn-primary activityTrigger"  tabindex=4 title="Subscribe" style="width: 120px;height: 29px;" onclick="window.location.href='[%= webCalUrl %]'">
+			Subscribe
+			</button> </p>
+		[% } %]
+		<p style="display: none;"><strong>Copy:</strong> <a href="[%= iCalURL %]" tabindex=4 title="This iCalendar URL">This iCalendar URL</a></p>
+		
+		<p>[%= iCalInstructions %]</p>
+		
+		<p> <input type="text" class="text" style="[%= (isMobile) ? 'width: 250px' : 'width: 550px' %];" value="[%= iCalFullURL %]" disabled tabindex=4> 
+			&nbsp;&nbsp;&nbsp;&nbsp;<button class="btn btn-primary" style="width: 80px;height: 29px;" onclick="copyToClipboard('[%= iCalFullURL %]')" aria-label="Copy" tabindex=4>Copy</button>
+		</p>
+		<label id="url-text" style="display:none;" class="url-txt">URL has been copied to your clipboard.</label>
+		
+		[% } %]
+		[% } %]
+</div>
+</div>
+<div id="profileEJS" style="display:none">
+[%
+	var summary = {allocated:0, pending:0, unallocated:0};
+	var summary_index = "";
+	$.each(data.student.student_enrolment, function(i, subject) {
+		if(subject.section_status!=undefined){
+			summary_index = getSectionAllocation(subject.subject_code);
+			summary_index = summary_index=="READ ONLY" ? "unallocated" : summary_index;	/* ASD-263, AD-216 */
+			summary[summary_index]++;
+		}else{
+			$.each(subject.groups, function(j, group) {
+				summary_index = getGroupAllocation(subject.subject_code, group.activity_group_code);
+				summary_index = summary_index=="READ ONLY" ? "unallocated" : summary_index;	/* ASD-263, AD-216 */
+				summary[summary_index]++;
+			});
+		}
+	});
+%]
+<div class="module">	
+	<div class="profile-info">
+	[% if(!!adminCode) { %]
+		<div class="admin-name">[%= adminFirstName + ' ' + adminLastName + ' ' + 'on behalf of' %]</div>
+		<div class="student-name" style="margin: 0;">[%= data.student.preferred_name + ' ' + data.student.last_name %]</div>
+	[% } else { %]
+		<div class="student-name">[%= data.student.preferred_name + ' ' + data.student.last_name %]</div>
+	[% } %]
+		<div>
+		[%= data.student.email_address %]<br>
+		[%= data.student.course %]<br>
+		</div>
+	</div>
+	<div class="clear"></div>
+	[% if(!adminHasPowerLoginFunction) { %]
+	<div class="profile-summary">
+		<div class="icon-container">
+			<span class="allocated icon">[%=summary.allocated%]</span> <span>Allocated</span>
+		</div>
+		<div class="icon-container">
+			<span class="pending icon">[%=summary.pending%]</span> <span>Pending</span>
+		</div>
+		<div class="icon-container">
+			<span class="notallocated icon">[%=summary.unallocated%]</span> <span>Not Allocated</span>
+		</div>
+	</div>
+	[% } %]
+</div>
+</div>
+
+<script>
+var alerts = []
+
+var adminCode = '';
+var newAlertsSize = 0;
+var currentLoginTime = 1739869761404;
+var lastLoginTime = 0;
+
+</script>
+
+</head>
+<body>
+
+	<div id="outer-header" class="desktop-only">
+		<img id="acu-logo" src="https://www.acu.edu.au/-/media/feature/identity/logo/acu-logo-white.svg?la=en&hash=38757D9A71D990CEACCD30BDB05AD108" height="50" alt="Australian Catholic University - Adelaide Brisbane Sydney Canberra Ballarat Melbourne">
+
+<link rel="stylesheet" type="text/css" href="MyFontsWebfontsKit.css">
+<link type="text/css" rel="stylesheet" href="https://selectclasses.acu.edu.au/odd/custom/allocate-override.css" media="all"/>
+
+<style>
+.aplus-container {
+  background-color: #f5f6f6;
+  color: #3D3935;
+  font-size: 11px;
+}
+.aplus-container .top-bar {
+  background-color: #3c1053;
+}
+.notification {
+  background-color: #3c1053;
+}
+.aplus-container ul.top-menu li a {
+  color: #ffffff;
+  font-weight: normal;
+}
+.aplus-container ul.top-menu li a:hover,
+.aplus-container ul.top-menu li a:focus {
+  background: #b30900;
+}
+.left-col .module {
+  border: 0px;
+}
+.right-col .module {
+  border: 0px;
+}
+.aplus-container .module,
+body .ui-tooltip {
+  background-color: #ffffff;
+  /*border-color: #245c96;*/
+  border-radius: 0px;
+}
+.aplus-container .module .upper_sec {
+  background-color: #e8e3da;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+.aplus-container .message-container .module .upper_sec {
+  background-color: #3C1053;
+  border-top-left-radius: 0px;
+  border-top-right-radius: 0px;
+}
+.aplus-container .message-container .module .upper_sec,
+.aplus-container .module .upper_sec h3 {
+  color: white;
+}
+.aplus-container .module .upper_sec,
+.aplus-container .module .upper_sec h3 {
+  color: #3D3935;
+}
+.aplus-container .subject-list li {
+  background-color: #f1f6fa;
+  border-bottom: 0px solid #f1f6fa;
+}
+.aplus-container .subject-list li.action,
+.aplus-container .subject-list li.section {
+  -background: white;
+}
+.aplus-container .subject-list li strong.arrow-container {
+  color: #3C1053;
+}
+
+/* small text in brackets on enrolment subject list */
+.aplus-container .subject-list li small {
+  color: #374850;
+}
+/* message box color */
+.aplus-container .msg-area .msg-box {
+  background: #F1F6FA;
+}
+/* grid scale font color */
+.aplus-container .dhx_cal_header,
+.aplus-container .dhx_scale_bar,
+.aplus-container .dhx_scale_hour {
+  -color: gray;
+}
+/* grid event font color */
+.aplus-container .dhx_cal_event .dhx_header,
+.aplus-container .dhx_cal_event .dhx_footer,
+.aplus-container .dhx_cal_event .dhx_body,
+.aplus-container .dhx_cal_event .dhx_title {
+  -color: white;
+}
+/* grid event colors */
+.aplus-container .legend_color_default,
+.aplus-container .dhx_cal_event.event_color_default > div {
+  background-color: #66ccff;
+}
+.aplus-container .legend_color_external_activity,
+.aplus-container .dhx_cal_event.event_color_external_activity > div {
+  background-color: #aabbcc;
+}
+.aplus-container .legend_color_wg,
+.aplus-container .dhx_cal_event.event_color_wg > div {
+  background-color: #1BE091;
+}
+.aplus-container .legend_color_allocated,
+.aplus-container .dhx_cal_event.event_color_allocated > div {
+  background-color: #ccffcc;
+}
+.aplus-container .legend_color_alternative,
+.aplus-container .dhx_cal_event.event_color_alternative > div {
+  background-color: #0099cc;
+}
+.aplus-container .legend_color_search,
+.aplus-container .dhx_cal_event.event_color_search > div {
+  background-color: #0099cc;
+}
+.aplus-container .legend_color_current,
+.aplus-container .dhx_cal_event.event_color_current > div {
+  background-color: #66ccff;
+}
+.aplus-container .legend_color_hl_multipart,
+.aplus-container .dhx_cal_event.event_color_hl_multipart > div {
+  background-color: orange;
+}
+.aplus-container .legend_color_my_act,
+.aplus-container .dhx_cal_event.event_color_my_act > div {
+  background-color: #82CBFF;
+}
+.aplus-container .legend_color_your_act,
+.aplus-container .dhx_cal_event.event_color_your_act > div {
+  background-color: #94D88C;
+}
+</style>
+	</div>
+	<div id="outer-container">
+
+	<div class="aplus-container">
+
+		<div class="top-bar">
+			<div class="logo-left"><div><img class="aplus-logo" src="./images/apLogo_reversed.png" alt="aplus-logo"></div></div>
+			<!-- mobile -->
+			<div class="left mobile-only">
+				<a class="top-menu-btn top-menu-btn-left">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</a>
+				<div id="semester_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<div id="aa_semester_aa_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;padding: 0px 9px 0px 0px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<div id="pa_semester_pa_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;padding: 0px 9px 0px 0px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<div id="pea_semester_pea_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<div id="pes_semester_pes_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<div id="ro_semester_ro_dropdown_mobile" class="dropdown mobile-only" style="float:left;position:relative;top:7px;display:none;">
+					<button class="filter-btn sprite"></button>
+					<ul class="dropdown-menu left"></ul>
+				</div>
+				<button id="refresh_btn_mobile" class="btn refresh-btn-small_mobile" onclick="refreshAABtn()" tabIndex="7" title="Refresh" style="display:none">
+					<i class="fa fa-refresh" aria-hidden="true"></i>
+				</button>
+			</div>
+			<div class="right mobile-only">
+				<div class="valign"></div>
+			</div>
+			<div class="mid mobile-only"><div class="valign"></div></div>
+			<!-- /mobile -->
+
+			<!-- desktop -->
+			<ul class="top-menu desktop-only">
+				<li><a href="#home" tabIndex="1" title="Home" aria-role="button" >Home</a></li>
+				
+				<li><a href="#timetable" onclick='if(timetableInit){activityDetailsGoBack("timetable-tpl");}' tabIndex="1" title="Timetable" aria-role="button">Timetable</a></li>
+
+				
+					<li><a href="#preferences" tabIndex="1" title="Preferences" aria-role="button">Preferences</a></li>
+				
+				
+				
+				<li>
+					<a id="livecal_dropdown_trigger" tabIndex="1" title="LiveCal" aria-role="button" onkeypress="clickEnterHandler(event, () => { toggleDropDowns(this)})">LiveCal</a>
+					<div id="livecal_dropdown" class="dropdown" >
+						<ul class="dropdown-menu right">
+							<li onclick="liveCalCompareTimeTableClick()" onkeypress="clickEnterHandler(event, () => {liveCalCompareTimeTableClick()})" tabIndex="1" title="Compare Timetable" aria-role="button">Compare Timetable</li>
+							<li onclick="liveCalConnectionsClick()" onkeypress="clickEnterHandler(event, () => {liveCalConnectionsClick()})" tabIndex="1" title="Connections" aria-role="button">Connections</li>
+							<li onclick="liveCalWorkgroupsClick()" onkeypress="clickEnterHandler(event, () => {liveCalWorkgroupsClick()})" tabIndex="1" title="Workgroups" aria-role="button">Workgroups</li>
+							<li onclick="liveCalSubscriptionsClick()" onkeypress="clickEnterHandler(event, () => {liveCalSubscriptionsClick()})" tabIndex="1" title="Subscriptions" aria-role="button">Subscriptions</li>
+		                </ul>
+					</div>
+				</li>
+				
+					<li><a href="https://www.acu.edu.au/study-at-acu/important-dates/course-timetable/class-selection-help" target="_blank" tabIndex="1" title="Help" aria-role="button">Help</a></li>
+				
+				<li><a href="rest/student/logout?ss=155af438ec1040f1899769e5ebe67c27" tabIndex="1" title="Logout" aria-role="button" onfocus="closeDropDowns('#livecal_dropdown');">Logout</a></li>
+				
+				<li>
+					<a id="alerts-menu" href="#alerts" tabIndex="1" title="Alerts" aria-role="button" class = "notification">
+						<i class="fa fa-bell-o" aria-hidden="true" style = "font-size: 13px"></i>
+						<span id = "alerts-span" class="badge"></span>
+					</a>
+				</li>
+				
+			</ul>
+			<!-- /desktop -->
+		</div>
+
+		<div class="left-col">
+			<ul id="mobile-left-menu" class="mobile-only">
+				
+				<li>
+					<a id="alerts-menu-mobile" href="#alerts" tabIndex="1" title="Alerts" aria-role="button" class="notification-mobile">
+						<i class="fa fa-bell-o" aria-hidden="true" style = "font-size: 13px"></i>
+						<span id = "alerts-span-mobile" class="badge-mobile"></span>
+					</a>
+				</li>
+				
+				<li><a  href="#home" tabIndex="1" title="Home" aria-role="button">Home</a></li>
+				
+				<li><a  href="#enrolment" tabIndex="1" title="Enrolment" aria-role="button">Enrolment</a></li>
+				<li><a  href="#timetable" tabIndex="1" title="Timetable" aria-role="button">Timetable</a></li>
+				
+				<li><a href="#preferences" tabIndex="1" title="Preferences" aria-role="button">Preferences</a>
+				
+					
+					<li><a href="#search" tabIndex="1" title="Search" aria-role="button">Search</a></li>
+				
+					<li class="sep-heading" tabIndex="1" title="LiveCal" aria-role="button">LiveCal</li>
+					<li><a href="#compare-timetable" tabIndex="1" title="Compare Timetable" aria-role="button">Compare Timetable</a></li>
+					<li><a href="#connection" tabIndex="1" title="Connections" aria-role="button">Connections</a></li>
+					<li><a href="#workgroup" tabIndex="1" title="Workgroups" aria-role="button">Workgroups</a></li>
+					<li><a href="#ical-subscription" tabIndex="1" title="Subscriptions" aria-role="button">Subscriptions</a></li>
+				
+				<li><a href="https://www.acu.edu.au/study-at-acu/important-dates/course-timetable/class-selection-help" target="_blank" tabIndex="1" title="Help" aria-role="button">Help</a></li>
+				
+				<li><a  href="rest/student/logout?ss=155af438ec1040f1899769e5ebe67c27" tabIndex="1" title="Logout" aria-role="button">Logout</a></li>
+				
+			</ul>
+			
+			<div class="profile" id="profile">
+				<div class="module"></div>
+			</div>
+			
+			<div class="enrolment" id="enrolment">
+				<div class="module"></div>
+			</div>
+			
+			<div class="search-div" id="search">
+				<div class="module">
+					<div class="upper_sec">
+						<h3>Search</h3>
+					</div>
+					<div class="lower_sec">
+						<form onsubmit="return prepareSubjectSearch();">
+							<div id="search-text-div">
+								<input type="text" value="Search code or description" class="search text" id="search_box" title="Search Input"
+								tabIndex="3"
+								onfocus="if (this.value=='Search code or description') this.value='';"
+								onblur="if (this.value=='') this.value='Search code or description';"
+								>
+							</div>
+							<div id="search-submit-div">
+								<input type="submit" class="search submit sprite search_icon" value="" tabIndex="3" aria-label="search" title="Search">
+							</div>
+						</form>
+						<div class="clear"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="right-col">
+
+			<div id="home-tpl" class="module" style="display:block">
+			</div>
+
+ 			<div id="timetable-tpl" class="module">
+ 				<div class="upper_sec upper_button_sec">
+ 					<div class="left mobile-only"><button class="prev">&lt;&lt;</button></div>
+ 					<div class="right mobile-only"><button class="next">&gt;&gt;</button></div>
+ 					<div class="mid mobile-only"><p></p></div>
+
+ 					<div id="pdf_dropdown" class="dropdown desktop-only">
+						<button class="print-btn sprite" title="Print your timetable" tabIndex="4"></button>
+						<ul class="dropdown-menu left">
+							<li class="no-highlight">Print:</li>
+							<li onclick="timetablePDF('portrait')" aria-role="button" tabIndex="4" title="Portrait" onkeypress="clickEnterHandler(event, () => {timetablePDF('portrait')})">
+							<span class="sprite pdf-icon" style="display:inline-block;" aria-label="Portrait"></span><label>Portrait</label></li>
+							<li onclick="timetablePDF('landscape')" aria-role="button" tabIndex="4" title="Landscape" onkeypress="clickEnterHandler(event, () => {timetablePDF('landscape')})">
+							<span class="sprite pdf-icon" style="display:inline-block;" aria-label="Landscape"></span><label>Landscape</label></li>
+		                </ul>
+					</div>
+ 					<div id="download_dropdown_tpl" class="dropdown desktop-only" >
+ 						<button class="download-btn sprite" title="Download your timetable" tabIndex="4" aria-label="Download your timetable"></button>
+						<ul class="dropdown-menu left">
+							<li class="no-highlight">Export:</li>
+ 							<li onclick="timetableFlatEXCEL()" aria-role="button" title="Excel" tabIndex="4" onkeypress="clickEnterHandler(event, () => {timetableFlatEXCEL()})"><span class="sprite excel-icon" style="display:inline-block;" aria-label="Excel"></span><label>Excel</label></li>
+ 							<li onclick="timetableFlatText()"  aria-role="button" title="Text" tabIndex="4" onkeypress="clickEnterHandler(event, () => {timetableFlatText()})"><span class="sprite text-icon" style="display:inline-block;" aria-label="Text"></span><label>Text</label></li>
+ 							
+ 							<li onclick="if(iCalURL!='null'){window.location=iCalURL;}" aria-role="button" title="iCal" tabIndex="4" onkeypress="clickEnterHandler(event, () => {if(iCalURL!='null'){window.location=iCalURL;}})">
+ 							<span class="sprite ical-icon" style="display:inline-block;"></span><label>iCal</label></li>
+ 							
+ 						</ul>
+ 					</div>
+					<div id="semester_dropdown" class="dropdown desktop-only" >
+						<button class="filter-btn sprite" title="Filter classes" tabIndex="4" aria-label="Filter classes"></button>
+						<ul class="dropdown-menu left">
+		                </ul>
+					</div>
+					<div class="slider-title desktop-only">Timetable Weeks</div>
+ 					<div class="slider desktop-only" title="Timetable slider" aria-role="slider"></div>
+ 					<div id="week_dropdown" class="dropdown desktop-only">
+							<button tabindex="4" aria-label="All Weeks" title="All Weeks">
+								<span class="btn-text" >All Weeks</span> <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu right">
+							<li onclick="timetableAllWeeks()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {timetableAllWeeks()})" aria-label="All Weeks"><label>All Weeks</label></li>
+							<li onclick="timetableCurrentWeek()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {timetableCurrentWeek()})" aria-label="Current Week"><label>Current Week</label></li>
+		                </ul>
+					</div>
+
+ 					<a id="sa_grid_tt" class="grid-btn sprite desktop-only" title="Show as grid" tabIndex="4" aria-label="Show as grid"></a>
+ 					<a id="sa_list_tt" class="flat-btn sprite desktop-only" title="Show as list" tabIndex="4" aria-label="Show as list"></a>
+ 					
+				</div>
+				<div class="lower_sec lower_grid_sec">
+	 				<div id="timetable-flat" class="flat hidden" aria-label="Timetable Flat">timetable-flat</div>
+					<div id="timetable-grid" class="dhx_cal_container grid" aria-label="Timetable Grid">
+						<div class="dhx_cal_navline">
+							<div class="dhx_cal_date"></div>
+						 	<div class="dhx_cal_prev_button" tabIndex="5" title="Previous" aria-role="button"
+						 	style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center"
+						 	>&nbsp;</div>
+							<div class="dhx_cal_next_button" tabIndex="5" title="Next" aria-role="button"
+							style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+							>&nbsp;
+							</div>
+						</div>
+						<div class="dhx_cal_header" aria-label="Timetable Cal Header"></div>
+						<div class="dhx_cal_data" aria-label="Timetable Cal Data"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- NEW PREFERENCES BEGIN -->
+
+				<div id="preferences-timetable-tpl" class="enrolment"
+					style="display: block; top: 0px; bottom: 0px;"
+					aria-label="Preferences">
+
+					<div class="module" style="overflow-y: auto">
+						<div class="upper_sec">
+							<h1 aria-label="Preferences">Preferences</h1>
+						</div>
+						<div id="preferences-grid-lower" class="lower_sec">
+							<div id="generate-pref-div" class="button desktop-only"
+								style="position: absolute; left: auto; right: 10px;">
+								<button id="generate-pref-btn" tabindex="4"
+									class="btn btn-primary" title= "Generate First Preferences"
+									onclick="showGeneratePreferencesDialog()" disabled>
+									<span class="btn-text" aria-label="Generate First Preferences">Generate
+										First Preferences</span>
+								</button>
+							</div>
+							<div id="preferences-grid-msg">
+								<div class="msg-area" style="width: 70%;">
+									<div id="pref_msg_box" class="msg-box" style="padding: 5px;">
+										<strong class="msg-head"><div class="msg-head-icon sprite "></div> </strong>
+									</div>
+
+								</div>
+							</div>
+							<div id="pref_tpl_module" class="module"
+								style="top: 50px; bottom: 105px;">
+								<div class="upper_sec upper_button_sec"
+									style="top: auto; position: static;">
+									<div class="left mobile-only">
+										<button class="prev">&lt;&lt;</button>
+									</div>
+									<div class="right mobile-only">
+										<button class="next">&gt;&gt;</button>
+									</div>
+									<div class="mid mobile-only">
+										<p></p>
+									</div>
+									
+									<div id="sem_dropdown_pref" class="dropdown desktop-only"
+										style="top: 5px; left: 10px;" >
+										<button id="preferences_filter_btn" class="filter-btn sprite" title="Filter classes"
+											tabIndex="4" aria-role="button" aria-label="Filter classes"></button>
+										<ul class="dropdown-menu left">
+										</ul>
+									</div>
+									<div class="slider-title desktop-only" style="top: 10px">Timetable
+										Weeks</div>
+									<div class="slider desktop-only" aria-label="Timetable slider"
+										style="top: 25px" aria-role="slider"></div>
+									<div id="week_dropdown" class="dropdown desktop-only"
+										style="right: 10px; top: 5px;">
+										<button tabindex="4" title="All Weeks">
+											<span class="btn-text" aria-label="All Weeks">All
+												Weeks</span> <span class="caret"></span>
+										</button>
+										<ul class="dropdown-menu right">
+											<li onclick="newPrefAllWeeks()"  aria-role="button" tabIndex="4" 
+												onkeypress="clickEnterHandler(event, () => {newPrefAllWeeks()})" title="All Weeks" aria-label="All Weeks"><label>All
+													Weeks</label></li>
+											<li onclick="newPrefCurrentWeek()" aria-role="button" tabIndex="4" title="Current Weeks" 
+												onkeypress="clickEnterHandler(event, () => {newPrefCurrentWeek()})" aria-label="Current Week"><label>Current
+													Week</label></li>
+										</ul>
+									</div>
+
+								</div>
+								<div id="pref_mid_sec" class="mid_sec mid_grid_sec"
+									style="bottom: 50px; top: 50px;">
+
+									<div id="preferences-timetable-grid"
+										class="dhx_cal_container grid"
+										aria-label="Preferences Timetable Grid">
+										<div class="dhx_cal_navline">
+											<div class="dhx_cal_date"></div>
+											<div class="dhx_cal_prev_button" style="left: 10px; background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center;" 
+											aria-role="button" tabIndex="5" title="Previous">&nbsp;</div>
+											<div class="dhx_cal_next_button" aria-role="button" tabIndex="5" title="Next"
+											style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+											>&nbsp;</div>
+
+										</div>
+										<div class="dhx_cal_header" aria-label="Timetable Cal Header"></div>
+										<div class="dhx_cal_data" aria-label="Timetable Cal Data"></div>
+									</div>
+								</div>
+
+								<div class="lower_sec" style="top: auto; left: auto;">
+
+									<div id="preferences-save-div" class="button desktop-only">
+										<button id="preferences-save-btn" tabindex="6"
+											class="btn btn-primary" onclick="saveNewPref()" title="Save" disabled>
+											<span class="btn-text" aria-label="Save">Save</span>
+										</button>
+									</div>
+								</div>
+							</div>
+							
+							
+							<div id="preferences-summary-flat" class="flat hidden"
+										style="display: block; overflow: auto; top: 90%;"
+										aria-label="preferences-flat" >
+							</div>
+						</div>
+					</div>
+				</div>
+
+
+
+				<!-- NEW PREFERENCES END -->
+			
+			<!-- PLANNER -->
+		
+			<div id="planner-create-tpl" class="module" aria-label="Create Planner"></div>
+			<div id="planner-timetable-tpl" class="module" aria-label="Planner Timetable">
+				<div class="upper_sec upper_button_sec">
+					<div style="width:100%;position:absolute;">
+						<h1>Student Timetable Planner</h1>
+					</div>
+					<div class="dropdown desktop-only" style="position:absolute;right:10px;z-index:9999">
+						<button style="width:150px" title="Saved Plans" tabIndex="4">
+							<span id="cs_planner" class="btn-text">Saved Plans</span> <span class="caret"></span>
+						</button>
+						<ul id="cs_planner_ids" class="dropdown-menu right">
+						</ul>
+					</div>
+				</div>
+				<div class="upper_sec upper_button_sec" style="background: #ffff; padding: 10px; height: 55px;">
+					<div class="msg-area" style="color: #004185">
+						<div class="msg-box">
+							<i class="fa fa-exclamation-circle fa-lg" aria-hidden="true" style="color:orange"></i>
+							<strong id="planner_msg_txt_id">Select an activity to see alternative options.</strong>
+						</div>
+					</div>
+				</div>
+				
+				<div id="plannerToolBar" class="upper_sec upper_button_sec" style="display: flex; height: 50px; align-items: flex-end;z-index:10">
+					<div class="slider desktop-only" aria-label="Timetable slider" aria-role="slider"></div>
+
+					<div id="pdf_dropdown" class="dropdown desktop-only" aria-label="PDF">
+						<button class="print-btn sprite" title="Print your timetable" tabIndex="4"></button>
+						<ul class="dropdown-menu left">
+							<li class="no-highlight">Print:</li>
+							<li onclick="plannerTTPDF('portrait')" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTPDF('portrait')})"><span class="sprite pdf-icon" style="display:inline-block;"></span><label>Portrait</label></li>
+							<li onclick="plannerTTPDF('landscape')" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTPDF('landscape')})"><span class="sprite pdf-icon" style="display:inline-block;"></span><label>Landscape</label></li>
+		                </ul>
+					</div>
+
+					<div id="download_dropdown" class="dropdown desktop-only" aria-label="Download your timetable">
+						<button class="download-btn sprite" title="Download your timetable"  tabIndex="4" aria-label="Download your timetable"></button>
+						<ul class="dropdown-menu left">
+							<li class="no-highlight">Export:</li>
+							<li onclick="plannerTTFlatEXCEL()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTFlatEXCEL()})"><span class="sprite excel-icon" style="display:inline-block;"></span><label>Excel</label></li>
+							<li onclick="plannerTTFlatText()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTFlatText()})"><span class="sprite text-icon" style="display:inline-block;"></span><label>Text</label></li>
+						</ul>
+					</div>
+					<div  style="margin-top: 5px; position: absolute; left: 90px;" >
+						<button id="timeTablePlanSaveBttn" class="btn btn-icon desktop-only planner-save" tabIndex="4" onclick="savePlan()" title="Save" style="width:30px;height:30px" aria-label="Save">
+							<i class="fa fa-floppy-o fa-lg" aria-hidden="true" style="position:absolute;top:8px;right:7px;color:gray;"></i>
+						</button>
+					</div>
+					<div style="margin-top: 5px; position: absolute; left: 130px;">
+						<button id="timeTablePlanSaveAsBttn" class="btn btn-icon desktop-only planner-save-as" tabIndex="4" onclick="saveAsPlan()" title="Save as" style="width:30px;height:30px" aria-label="Save as">
+							<i class="fa fa-clone fa-lg" aria-hidden="true" style="position:absolute;top:8px;right:7px;color:gray;"></i>
+						</button>
+					</div>
+					<div  style="margin-top: 5px; position: absolute; left: 170px;">
+						<button id="timeTablePlanDeleteBttn" class="btn btn-icon desktop-only planner-delete" tabIndex="4" onclick="toogleDeleteModeTTPlan()" title="Delete Activity" style="width:30px;height:30px;display:none" aria-label="Delete Activity">
+							<i class="fa fa-ban fa-lg" aria-hidden="true" style="position:absolute;top:8px;right:7px;color:gray;"></i>
+						</button>
+						<button id="timeTablePlanEditBttn" class="btn btn-icon desktop-only planner-edit" tabIndex="4" onclick="toogleEditModeTTPlan()" title="Edit Plan" style="width:30px;height:30px" aria-label="Edit Plan">
+							<i class="fa fa-pencil fa-lg" aria-hidden="true" style="position:absolute;top:8px;right:7px;color:gray;"></i>
+						</button>
+					</div>
+					
+					<div id="week_dropdown" class="dropdown desktop-only" aria-label="Week Dropdown">
+							<button aria-label="All Weeks" tabIndex="4">
+								<span class="btn-text">All Weeks</span> <span class="caret"></span>
+							</button>
+							<ul class="dropdown-menu right">
+							<li onclick="plannerTTAllWeeks()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTAllWeeks()})"><label>All Weeks</label></li>
+							<li onclick="plannerTTCurrentWeek()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {plannerTTCurrentWeek()})"><label>Current Week</label></li>
+		                </ul>
+					</div>
+					<div  id="planner_plan_title_holder" style="position:absolute;margin-top: 5px;margin-left: auto;margin-right: auto;left: 0;right: 0;text-align: center; text-overflow:ellipsis; width: 250px; white-space: nowrap;overflow: hidden;">
+						<h3 style="font-size: large; " id="planner_plan_title_name"></h3>
+					</div>
+					
+					
+					<a id="sa_grid_plan" class="grid-btn sprite desktop-only" title="Show as grid" tabIndex="4" aria-label="Show as grid"></a>
+					<a id="sa_list_plan" class="flat-btn sprite desktop-only" title="Show as list" tabIndex="4" aria-label="Show as list"></a>
+					
+				</div>
+				
+					<div id="lowerGridId" class="lower_sec lower_grid_sec" style="top:180px">
+						<div id="planner-timetable-flat" class="flat hidden" style="display: block;overflow: auto;" aria-label="planner-flat">planner-flat</div>
+						<div id="planner-timetable-grid" class="dhx_cal_container grid">
+							<div class="dhx_cal_navline desktop-only">
+								<div class="dhx_cal_date"></div>
+								<div class="dhx_cal_prev_button" aria-label="previous" tabIndex="5"
+								style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center"
+								>&nbsp;</div>
+								<div class="dhx_cal_next_button" aria-label="next" tabIndex="5"
+								style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+								>&nbsp;</div>
+							</div>
+							<div class="dhx_cal_header" aria-label="cal header"></div>
+							<div class="dhx_cal_data" aria-label="cal data"></div>
+						</div>
+					</div>
+				
+			</div>
+			
+			<div id="alerts-tpl" class="module" style="display:block">
+			</div>
+			<div id="connection-tpl" class="module"></div>
+			<div id="connection-timetable-tpl" class="module">
+ 				<div class="upper_sec upper_button_sec">
+ 					<div class="legend">
+	 					<div style="float:left;" >
+	 						<span class="legend_color_my_act"></span><strong>me</strong>
+	 					</div>
+	 					<div style="float:right;" >
+	 						<span class="legend_color_your_act"></span><strong>you</strong>
+	 					</div>
+ 					</div>
+ 					<div class="slider" aria-label="Timetable slider" aria-role="slider"></div>
+				</div>
+				<div class="lower_sec lower_grid_sec">
+	 				<div id="connection-timetable-flat" class="flat" aria-label="connection-timetable-flat">connection-timetable-flat</div>
+					<div id="connection-timetable-grid" class="dhx_cal_container grid" aria-label="connection-timetable-grid">
+						<div class="dhx_cal_navline">
+							<div class="dhx_cal_date" aria-label="cal date"></div>
+						</div>
+						<div class="dhx_cal_header" aria-label="cal header"></div>
+						<div class="dhx_cal_data" aria-label="cal data"></div>
+					</div>
+				</div>
+			</div>
+			<div id="compare-timetable-tpl" class="module">
+ 				<div class="upper_sec upper_button_sec">
+ 					<div id="compare_dropdown" class="dropdown" aria-label="Connections">
+						<button tabIndex="5">
+							<span class="btn-text">Connections</span> <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu right" tabIndex="5">
+		                </ul>
+					</div>
+ 					<div class="slider" aria-label="Timetable slider" aria-role="slider"></div>
+				</div>
+				<div class="lower_sec lower_grid_sec">
+	 				<div id="compare-timetable-flat" class="flat" aria-label="connection timetable flat">connection-timetable-flat</div>
+					<div id="compare-timetable-grid" class="dhx_cal_container grid" >
+						<div class="dhx_cal_navline">
+							<div class="dhx_cal_date" aria-label="cal date"></div>
+							<div class="dhx_cal_prev_button" style="left: 10px; background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center" 
+							tabIndex="5">&nbsp;</div>
+							<div class="dhx_cal_next_button" tabIndex="5"
+							style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+							>&nbsp;</div>
+						</div>
+						<div class="dhx_cal_header" aria-label="cal header"></div>
+						<div class="dhx_cal_data" aria-label="cal data"></div>
+					</div>
+				</div>
+			</div>
+			<div id="exam-timetable-tpl" class="module">
+				<div class="upper_sec upper_button_sec">
+					<div class="left mobile-only"><button class="prev" aria-label="previous-mobile">&lt;&lt;</button></div>
+					<div class="right mobile-only"><button class="next" aria-label="next-mobile">&gt;&gt;</button></div>
+					<div class="mid mobile-only"><p></p></div>
+
+					<div id="week_dropdown" class="dropdown desktop-only" aria-label="All Weeks">
+						<button>
+							<span class="btn-text">All Weeks</span> <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu right">
+							<li onclick="examTimetableAllWeeks()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {examTimetableAllWeeks()})"><label>All Weeks</label></li>
+							<li onclick="examTimetableCurrentWeek()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {examTimetableCurrentWeek()})"><label>Current Week</label></li>
+		                </ul>
+					</div>
+
+					<a class="flat-btn sprite desktop-only" title="Show as list" tabIndex="5"></a>
+					<a class="grid-btn sprite desktop-only" title="Show as grid" tabIndex="4"></a>
+					<div class="slider-title desktop-only">Exam Timetable Weeks</div>
+					<div class="slider desktop-only" aria-label="Exam Timetable slider" aria-role="slider"></div>
+				</div>
+				<div class="lower_sec lower_grid_sec">
+					<div id="exam-timetable-flat" class="flat hidden">exam-timetable-flat</div>
+					<div id="exam-timetable-grid" class="dhx_cal_container grid">
+						<div class="dhx_cal_navline">
+							<div class="dhx_cal_date"></div>
+							<div class="dhx_cal_prev_button" tabIndex="5"
+							style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center"
+							>&nbsp;</div>
+							<div class="dhx_cal_next_button" tabIndex="5"
+							style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+							>&nbsp;</div>
+						</div>
+						<div class="dhx_cal_header"></div>
+						<div class="dhx_cal_data"></div>
+					</div>
+				</div>
+			</div>
+
+			<div id="ical-subscription-tpl" class="module"></div>
+			<div id="add-ical-subscription-tpl" class="module"></div>
+			<div id="edit-ical-subscription-tpl" class="module"></div>
+			<div id="ical-subscription-details-tpl" class="module"></div>
+
+			<div id="workgroup-tpl" class="module"></div>
+			<div id="add-workgroup-tpl" class="module"></div>
+			<div id="edit-workgroup-tpl" class="module"></div>
+			<div id="workgroup-details-tpl" class="module"></div>
+
+			<div id="group-tpl" class="module">
+			<div id="group-tpl-AA" class="module">
+
+				<div id="aa_semester_aa_dropdown" class="dropdown desktop-only" >
+						<button class="filter-btn sprite" title="Filter classes" tabIndex="5"></button>
+						<ul class="dropdown-menu left" tabIndex="5">
+		                </ul>
+				</div>
+
+				<div class="slider desktop-only" aria-label="Timetable slider" aria-role="slider"></div>
+			</div>
+			</div>
+
+			<div id="section-tpl" class="module"></div>
+
+			<div id="subject-tpl" class="module"></div>
+
+			<div id="subject-search-results-tpl" class="module">
+				<div class="upper_sec">
+					<h3>Search Results</h3>
+				</div>
+				<div class="lower_sec">
+				</div>
+			</div>
+
+			<div id="subject-search-tpl" class="module">
+				<div class="upper_sec upper_button_sec">
+					<div class="left mobile-only"><button class="prev">&lt;&lt;</button></div>
+ 					<div class="right mobile-only"><button class="next">&gt;&gt;</button></div>
+ 					<div class="mid mobile-only"><p></p></div>
+
+					<div id="subject_search_week_dropdown" class="dropdown desktop-only">
+						<button tabIndex="4">
+							<span class="btn-text">All Weeks</span> <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu right">
+							<li onclick="subjectSearchGridAllWeeks()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {subjectSearchGridAllWeeks()})"><label>All Weeks</label></li>
+							<li onclick="subjectSearchGridCurrentWeek()" aria-role="button" tabIndex="4" onkeypress="clickEnterHandler(event, () => {subjectSearchGridCurrentWeek()})"><label>Current Week</label></li>
+						</ul>
+					</div>
+					<a class="flat-btn sprite desktop-only" title="Show as list" tabIndex="5"></a>
+					<a class="grid-btn sprite desktop-only" title="Show as grid" tabIndex="4"></a>
+					<div class="desc-text desktop-only" style="width:150px;white-space:normal;text-overflow:clip"></div>
+					<div class="slider-title desktop-only">Timetable Weeks</div>
+					<div class="slider desktop-only" aria-label="Timetable slider" aria-role="slider"></div>
+				</div>
+				<div class="lower_sec lower_grid_sec">
+					<div id="subject-search-grid" class="grid">
+						<div class="dhx_cal_navline">
+							<div class="dhx_cal_date"></div>
+						 	<div class="dhx_cal_prev_button desktop-only" tabIndex="5"
+						 	style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_left.png') no-repeat center center"
+						 	>&nbsp;</div>
+							<div class="dhx_cal_next_button desktop-only" tabIndex="5"
+							style = "background: url('studentUI/dhtmlx/codebase/imgs_dhx_terrace/arrow_right.png') no-repeat center center"
+							>&nbsp;</div>
+						</div>
+						<div class="dhx_cal_header"></div>
+						<div class="dhx_cal_data"></div>
+					</div>
+					<div id="subject-search-flat" class="flat hidden"></div>
+				</div>
+			<!--  END!!! -->
+			</div>
+
+			<div id="activity-details-tpl" class="module"></div>
+			<div id="exam-act-details-tpl" class="module"></div>
+
+			<div id="map-tpl" class="module"></div>
+		</div>
+		<div id="dialog"><div id="dialog-content"></div></div>
+		<div id="dialog-gen-pref" style="display: none;">
+			<div id="dialog-content">
+				<strong>First Preference Timetable Options</strong>
+				<div id="gen-pref-div">
+					<!-- <form id="gen-pref-form"> -->
+					<table style='padding-top: 10px; border-spacing: 10px;'>
+					
+						<tr>
+							<td><input type='radio' value='usp' id='use-plan' name='gen-pref-opt'><label for='use-plan'>Use Saved Plan</label></td>
+							<td>
+								<select id="saved_planner_ids" aria-label='Saved Plans'>
+									<option>-- Select Plan --</option>
+								</select>
+							</td>
+						</tr>
+						
+						<tr>
+							<td><input type='radio' value='genpref' id='gen-pref' name='gen-pref-opt' checked><label for='gen-pref'>Generate New</label></td>
+							<td><input type='checkbox' value='avoid-clash' id='avoid-clash' name='avoid-clash' checked><label for='avoid-clash'>Avoid Clashes</label></td>
+						</tr>
+						<tr>
+							<td align='left'><button class='btn btn-primary cancel-btn' aria-label='Cancel' tabIndex='23'>Cancel</button></td>
+							<td align='right'><button id='dialog-generate-btn' class='btn btn-red' aria-label='Generate Preferences' tabIndex='23' onclick='generateFirstPreference()'>Generate Preferences</button></td>
+						</tr>
+					</table>
+					<!-- </form> -->
+				</div>
+				
+			</div>
+		</div>
+		
+	</div>
+
+	</div>
+
+	<div class="spinner"></div>
+	<div class="spinner-mask"></div>
+
+	<div id="modal"></div>
+
+</body>
+
+
+<script>
+var rest_timeout = 10000.0;
+var ss = "155af438ec1040f1899769e5ebe67c27";
+var student_code = "S00357675";
+var iCalURL=null;
+var iCalInstructions = null;
+var planner_create_disabled = "disabled";
+var planner_show_seats = true;
+var section_allocation_instruction = `<ul>
+	<li>Select one activity from every activity group within one section only.</li>
+	<li>You cannot select activities across multiple sections.</li>
+</ul>`;
+var section_preference_instruction = `<p>Allocate+ streams some groups of classes into sections.<br>
+For example, Workshop A/01 and Worskhop B/01 make up Section 001. Please enter preferences for a minimum of 6 sections.
+<br><br>
+	<b>Step 1:</b><br>
+	Select a preference for at least <b><minimum_preferences/></b> sections by placing a number in the section box.<br>
+	1 indicates your first preference, 2 indicates your second preference etc.
+</p>
+<p>
+	<b>Step 2:</b><br>
+	If all the activities in a section have a 1 in the box, no further action is required.<br>
+	Otherwise change this number to the preference number of the section. 
+</p>`;
+var timezone_enabled = true;
+
+
+var planner_enrolled_act_types = ["Lecture Q&A", "PASS Program", "Tutorial", "Workshop"];
+
+;
+iCalURL = "rest/calendar/ical/6ed97d03-e2f3-4285-8c3a-96d50d285d69";
+if(iCalURL=="null"){
+	iCalURL = null;
+}
+
+
+
+iCalInstructions = `You can use this URL to subscribe from your iPhone, Google Calendar, MS Outlook, etc. The help pages on those products will guide you on how.<br>
+<b>If you are enrolled in an <em>OS unit</em>, please check your class time for these units in Leo or Canvas as the calendar sync may be incorrect depending on your timezone.</b>`;
+var contextPath = "/odd/";
+
+var subjectInfoURL="https://www.studentportal.acu.edu.au/acuinfo/admin/e/ceg";
+
+var student_welcome_html= htmlcondition(function() {/*!<h2>Information for Returning Students </h2>
+<div id="welcome-message">
+  <p>   <p>
+
+Preference entry for Semester 1, Professional Terms 1-5, Summer and Winter 2025 opens on 8 October 2024. Ensure you also check 2024 "My Timetable" for summer units</p>
+
+
+
+
+  <a class="cat--manager--purple--100bg" style="position: static;" href=" https://www.studentportal.acu.edu.au/acuinfo/cau/your-timetable" target="_blank">View the important dates for your campus</a> 
+
+</div>
+<p class="standard"> <a href="https://selectclasses.acu.edu.au/even/student"target="_blank"> My Timetable 2024</a></p>
+
+
+<iframe width="500" height="220" src="https://www.youtube.com/embed/D6oaJqgRBn0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<p class="standard">View the <a href="https://www.studentportal.acu.edu.au/acuinfo/cau/your-timetable"target="_blank"> important timetable dates for 2024/2025</a></p>
+
+<p class="standard">You can find out about <a href=" https://www.acu.edu.au/-/media/acu/portal/pdfs/allocate-codes.pdf?la=en&hash=ABD463C1DAC389C44881D7F66A8146F2"target="_blank"> class types and codes</a> here</p>
+<br>
+
+<!--
+Learn more about<a href=" https://www.studentportal.acu.edu.au/acuinfo/cau/your-timetable"> preferential class selection</a> and important dates for Semester 2 2020<br>
+<br>
+<br>
+
+You can find out about <a href=" https://www.studentportal.acu.edu.au/acuinfo/cau/your-timetable"> class types and codes</a> here<br>
+<br>
+-->*/});
+var new_student_welcome_html= htmlcondition(function() {/*!*/});
+var allocation_availability = "Y";
+
+//AD-356: display description and display staff according to the configuration settings
+var hide_description = "n";
+var hide_staff = "n";
+
+var student_default_enrolment_sort = "alpha";
+if(student_default_enrolment_sort==""){
+	student_default_enrolment_sort = "alpha";
+}
+var student_default_timetable_view = "grid";
+if(student_default_timetable_view==""){
+	student_default_timetable_view = "grid";
+}
+
+//Original msg: "Not allowed with any of the following activities"
+const ALLOC_DISQUALIFY_ACT_RESTRICT = "this combination of activities is not allowed: ";
+const ALLOC_DISQUALIFY_ACT_RESTRICT_CONCAT = " <-> ";
+
+const ALLOC_DISQUALIFY_COMBO_DEALLOC = "this combination of activities is not allowed: proceed with this will deallocate conflicting activity - ";
+const ALLOC_DISQUALIFY_COMBO_CONFLICT = "this combination of activities is not allowed:  - ";
+
+const SYS_STUDENT_ENTERED_Y = "SE_Y";
+const SYS_STUDENT_ENTERED_N = "SE_N";
+const ATTENDANCE_OFFSET = "0";
+var isStudentAttendanceEnabled = false;
+
+
+cust_map_url='';
+var googleMapAPIKey= '';
+var mapProvider = 'No maps';
+var mapIcon = '';
+var isValidMapProvider = false;
+if(mapProvider == 'Google') {
+	isValidMapProvider = googleMapAPIKey != '';
+} else if(mapProvider == 'Custom Link' || mapProvider == 'MazeMaps') {
+	isValidMapProvider = cust_map_url != '';
+}
+
+var mapInstructions = `Click the location name to open a map`;
+
+show_message_off_activity_group='N';
+exam_instance_status='OFF';
+data={"student":{"student_code":"S00357675","first_name":"Bezawit","last_name":"Basse","attend_type":"F","course":"BNN","email_address":"bezawit.basse@myacu.edu.au","preferred_name":"Bezawit","allocated":{"BIOL121_4C_Sem1||LQA||01":{"subject_description":"HUMAN BIOLOGICAL SCIENCE 1","subject_code":"BIOL121_4C_Sem1","displaySubjectCode":"BIOL121_4C_Sem1","activity_group_code":"LQA","activity_code":"01","campus":"4","campus_description":"Melbourne","day_of_week":"Wed","start_time":"12:00","location":"MEL_OnlineLive","staff":"LAY, Eileen","duration":"60","activity_size":450,"student_count":320,"buffer":0,"availability":130,"week_pattern":"0000000001111111011111000000000000000000000000000000","description":"HUMAN BIOLOGICAL SCIENCE 1","zone":"MEL","department":"Science (Melb)","semester":"202530","semester_description":"Semester 1","activityType":"Lecture Q&A","capacity":"10000","section_code":"-","source":"Single Sort","start_date":"30\/12\/2024","color":"#null","activitiesDays":["5\/3\/2025","12\/3\/2025","19\/3\/2025","26\/3\/2025","2\/4\/2025","9\/4\/2025","16\/4\/2025","30\/4\/2025","7\/5\/2025","14\/5\/2025","21\/5\/2025","28\/5\/2025"],"lat":"","lng":"","locations":[{"id":"MEL_OnlineLive","description":"","lat":"","lng":"","activityDays":["5\/3\/2025","12\/3\/2025","19\/3\/2025","26\/3\/2025","2\/4\/2025","9\/4\/2025","16\/4\/2025","30\/4\/2025","7\/5\/2025","14\/5\/2025","21\/5\/2025","28\/5\/2025"]}],"group_status":"ALLOCATION ADJUSTMENT","timezone":"Australia\/Melbourne","record_attendance":false,"attendanceStudent":"S00357675","attendanceStatus":"","attendanceUpdatedBy":""},"BIOL121_4C_Sem1||W||03":{"subject_description":"HUMAN BIOLOGICAL SCIENCE 1","subject_code":"BIOL121_4C_Sem1","displaySubjectCode":"BIOL121_4C_Sem1","activity_group_code":"W","activity_code":"03","campus":"4","campus_description":"Melbourne","day_of_week":"Thu","start_time":"13:00","location":"420.3.87","staff":"FRANCIONE, Lisa (6\/3-17\/4, 1\/5-29\/5), TBD Lecturer (6\/3-17\/4, 1\/5-29\/5)","duration":"120","activity_size":24,"student_count":23,"buffer":-1,"availability":0,"week_pattern":"0000000001111111011111000000000000000000000000000000","description":"HUMAN BIOLOGICAL SCIENCE 1","zone":"MEL","department":"Science (Melb)","semester":"202530","semester_description":"Semester 1","activityType":"Workshop","capacity":"24","section_code":"-","source":"Allocation Adjustment by student (S00357675)","start_date":"30\/12\/2024","color":"#0080ff","activitiesDays":["6\/3\/2025","13\/3\/2025","20\/3\/2025","27\/3\/2025","3\/4\/2025","10\/4\/2025","17\/4\/2025","1\/5\/2025","8\/5\/2025","15\/5\/2025","22\/5\/2025","29\/5\/2025"],"lat":"0","lng":"0","locations":[{"id":"420.3.87","description":"Science Biology Lab","lat":"0","lng":"0","activityDays":["6\/3\/2025","13\/3\/2025","20\/3\/2025","27\/3\/2025","3\/4\/2025","10\/4\/2025","17\/4\/2025","1\/5\/2025","8\/5\/2025","15\/5\/2025","22\/5\/2025","29\/5\/2025"]}],"group_status":"ALLOCATION ADJUSTMENT","timezone":"Australia\/Melbourne","record_attendance":false,"attendanceStudent":"S00357675","attendanceStatus":"","attendanceUpdatedBy":""},"HLSC122_4C_Sem1||T||23":{"subject_description":"EVIDENCE FOR PRACTICE","subject_code":"HLSC122_4C_Sem1","displaySubjectCode":"HLSC122_4C_Sem1","activity_group_code":"T","activity_code":"23","campus":"4","campus_description":"Melbourne","day_of_week":"Wed","start_time":"14:00","location":"420.2.19","staff":"TBD Lecturer","duration":"60","activity_size":34,"student_count":27,"buffer":0,"availability":0,"week_pattern":"0000000001111111011100000000000000000000000000000000","description":"EVIDENCE FOR PRACTICE","zone":"MEL","department":"Nursing (Melbourne)","semester":"202530","semester_description":"Semester 1","activityType":"Tutorial","capacity":"30","section_code":"-","source":"Allocation Adjustment by student (S00357675)","start_date":"30\/12\/2024","color":"#f96400","activitiesDays":["5\/3\/2025","12\/3\/2025","19\/3\/2025","26\/3\/2025","2\/4\/2025","9\/4\/2025","16\/4\/2025","30\/4\/2025","7\/5\/2025","14\/5\/2025"],"lat":"0","lng":"0","locations":[{"id":"420.2.19","description":"Learning Space","lat":"0","lng":"0","activityDays":["5\/3\/2025","12\/3\/2025","19\/3\/2025","26\/3\/2025","2\/4\/2025","9\/4\/2025","16\/4\/2025","30\/4\/2025","7\/5\/2025","14\/5\/2025"]}],"group_status":"ALLOCATION ADJUSTMENT","timezone":"Australia\/Melbourne","record_attendance":false,"attendanceStudent":"S00357675","attendanceStatus":"","attendanceUpdatedBy":""}},"student_enrolment":{"BIOL121_4C_Sem1":{"subject_code":"BIOL121_4C_Sem1","description":"HUMAN BIOLOGICAL SCIENCE 1","manager":"Genevieve Morris","email_address":"-","faculty":"HS","semester":"202530","semester_description":"Semester 1","campus":"4","campus_description":"Melbourne","timezone":"Australia\/Melbourne","showOnTT":"Y","display_subject_code":"BIOL121_4C_Sem1","callista_code":"BIOL121","displaySubjectCode":"BIOL121_4C_Sem1","transDisplaySubjectCode":"BIOL121_4C_Sem1","groups":{"LQA":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"LQA","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"These lectures will be in a question and answer\/chat style format. Students are encouraged to attend as it is a valuable learning opportunity. Recordings may be available - please check your CANVAS site.  If you have any queries regarding your class allocations, please contact Science.Admin@acu.edu.au and include your full name, student number and campus.","show_availability":"Y","act_cnt":1,"displaySubjectCode":"BIOL121_4C_Sem1"},"PP":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"PP","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"OFF","auto_single":"N","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"<p style=\"letter-spacing: 0.14994px;\">Peer Assisted Study Sessions (PASS) are a fun, free and voluntary supplemental academic program open to ALL students enrolled in nominated units. <em><span style=\"text-decoration-line: underline;\">Please note this timetable is provisional and likely to change.<\/span><\/em> The finalised timetable will be released the week before semester begins.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you find you can’t enrol in PASS (PP) on Allocate+, please don’t worry. We encourage students to drop in to the sessions, so please feel free to attend any session even if you haven’t enrolled.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you have any questions, please contact the PASS team on <em><span style=\"text-decoration-line: underline;\">passacu@acu.edu.au<\/span><\/em><\/p>","show_availability":"Y","act_cnt":2,"displaySubjectCode":"BIOL121_4C_Sem1"},"W":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"W","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","show_availability":"Y","act_cnt":15,"displaySubjectCode":"BIOL121_4C_Sem1"}}},"HLSC122_4C_Sem1":{"subject_code":"HLSC122_4C_Sem1","description":"EVIDENCE FOR PRACTICE","manager":"Alicia Evans","email_address":"-","faculty":"HS","semester":"202530","semester_description":"Semester 1","campus":"4","campus_description":"Melbourne","timezone":"Australia\/Melbourne","showOnTT":"Y","display_subject_code":"HLSC122_4C_Sem1","callista_code":"HLSC122","displaySubjectCode":"HLSC122_4C_Sem1","transDisplaySubjectCode":"HLSC122_4C_Sem1","groups":{"PP":{"subject_code":"HLSC122_4C_Sem1","activity_group_code":"PP","description":"EVIDENCE FOR PRACTICE","num_flagged_timeslots":"0","status":"OFF","auto_single":"N","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"<p style=\"letter-spacing: 0.14994px;\">Peer Assisted Study Sessions (PASS) are a fun, free and voluntary supplemental academic program open to ALL students enrolled in nominated units. <em><span style=\"text-decoration-line: underline;\">Please note this timetable is provisional and likely to change.<\/span><\/em> The finalised timetable will be released the week before semester begins.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you find you can’t enrol in PASS (PP) on Allocate+, please don’t worry. We encourage students to drop in to the sessions, so please feel free to attend any session even if you haven’t enrolled.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you have any questions, please contact the PASS team on <em><span style=\"text-decoration-line: underline;\">passacu@acu.edu.au<\/span><\/em><\/p>","show_availability":"Y","act_cnt":4,"displaySubjectCode":"HLSC122_4C_Sem1"},"T":{"subject_code":"HLSC122_4C_Sem1","activity_group_code":"T","description":"EVIDENCE FOR PRACTICE","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","show_availability":"Y","act_cnt":38,"displaySubjectCode":"HLSC122_4C_Sem1"}}}},"student_enrolment_sem":{"Semester 1":{"BIOL121_4C_Sem1":{"subject_code":"BIOL121_4C_Sem1","description":"HUMAN BIOLOGICAL SCIENCE 1","manager":"Genevieve Morris","email_address":"-","faculty":"HS","semester":"202530","semester_description":"Semester 1","campus":"4","campus_description":"Melbourne","timezone":"Australia\/Melbourne","showOnTT":"Y","display_subject_code":"BIOL121_4C_Sem1","callista_code":"BIOL121","displaySubjectCode":"BIOL121_4C_Sem1","transDisplaySubjectCode":"BIOL121_4C_Sem1","groups":{"LQA":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"LQA","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"These lectures will be in a question and answer\/chat style format. Students are encouraged to attend as it is a valuable learning opportunity. Recordings may be available - please check your CANVAS site.  If you have any queries regarding your class allocations, please contact Science.Admin@acu.edu.au and include your full name, student number and campus.","show_availability":"Y","act_cnt":1,"displaySubjectCode":"BIOL121_4C_Sem1"},"PP":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"PP","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"OFF","auto_single":"N","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"<p style=\"letter-spacing: 0.14994px;\">Peer Assisted Study Sessions (PASS) are a fun, free and voluntary supplemental academic program open to ALL students enrolled in nominated units. <em><span style=\"text-decoration-line: underline;\">Please note this timetable is provisional and likely to change.<\/span><\/em> The finalised timetable will be released the week before semester begins.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you find you can’t enrol in PASS (PP) on Allocate+, please don’t worry. We encourage students to drop in to the sessions, so please feel free to attend any session even if you haven’t enrolled.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you have any questions, please contact the PASS team on <em><span style=\"text-decoration-line: underline;\">passacu@acu.edu.au<\/span><\/em><\/p>","show_availability":"Y","act_cnt":2,"displaySubjectCode":"BIOL121_4C_Sem1"},"W":{"subject_code":"BIOL121_4C_Sem1","activity_group_code":"W","description":"HUMAN BIOLOGICAL SCIENCE 1","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","show_availability":"Y","act_cnt":15,"displaySubjectCode":"BIOL121_4C_Sem1"}}},"HLSC122_4C_Sem1":{"subject_code":"HLSC122_4C_Sem1","description":"EVIDENCE FOR PRACTICE","manager":"Alicia Evans","email_address":"-","faculty":"HS","semester":"202530","semester_description":"Semester 1","campus":"4","campus_description":"Melbourne","timezone":"Australia\/Melbourne","showOnTT":"Y","display_subject_code":"HLSC122_4C_Sem1","callista_code":"HLSC122","displaySubjectCode":"HLSC122_4C_Sem1","transDisplaySubjectCode":"HLSC122_4C_Sem1","groups":{"PP":{"subject_code":"HLSC122_4C_Sem1","activity_group_code":"PP","description":"EVIDENCE FOR PRACTICE","num_flagged_timeslots":"0","status":"OFF","auto_single":"N","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","message":"<p style=\"letter-spacing: 0.14994px;\">Peer Assisted Study Sessions (PASS) are a fun, free and voluntary supplemental academic program open to ALL students enrolled in nominated units. <em><span style=\"text-decoration-line: underline;\">Please note this timetable is provisional and likely to change.<\/span><\/em> The finalised timetable will be released the week before semester begins.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you find you can’t enrol in PASS (PP) on Allocate+, please don’t worry. We encourage students to drop in to the sessions, so please feel free to attend any session even if you haven’t enrolled.<\/p>\r\n<p style=\"letter-spacing: 0.14994px;\">If you have any questions, please contact the PASS team on <em><span style=\"text-decoration-line: underline;\">passacu@acu.edu.au<\/span><\/em><\/p>","show_availability":"Y","act_cnt":4,"displaySubjectCode":"HLSC122_4C_Sem1"},"T":{"subject_code":"HLSC122_4C_Sem1","activity_group_code":"T","description":"EVIDENCE FOR PRACTICE","num_flagged_timeslots":"0","status":"ALLOCATION ADJUSTMENT","auto_single":"Y","min_prefs":0,"allow_justification":"N","allow_waitlist":"N","show_availability":"Y","act_cnt":38,"displaySubjectCode":"HLSC122_4C_Sem1"}}}}},"preferences":{},"newPreferences":{},"singleOptionPrefs":{},"section_preferences":{},"section_preferences_grid":{},"external_activities":{},"flagged":"[]","sorted_display":{"BIOL121_4C_Sem1||LQA||01":{"displaySubjectCode":"BIOL121_4C_Sem1","agv_subject_code":"BIOL121_4C_Sem1","agv_location":"MEL_OnlineLive","agv_activity_group_code":"LQA","agv_week_pattern":"0000000001111111011111000000000000000000000000000000","agv_staff":"LAY, Eileen"},"BIOL121_4C_Sem1||W||03":{"displaySubjectCode":"BIOL121_4C_Sem1","agv_subject_code":"BIOL121_4C_Sem1","agv_location":"420.3.87","agv_activity_group_code":"W","agv_week_pattern":"0000000001111111011111000000000000000000000000000000","agv_staff":"FRANCIONE, Lisa (6\/3-17\/4, 1\/5-29\/5), TBD Lecturer (6\/3-17\/4, 1\/5-29\/5)"},"HLSC122_4C_Sem1||T||23":{"displaySubjectCode":"HLSC122_4C_Sem1","agv_subject_code":"HLSC122_4C_Sem1","agv_location":"420.2.19","agv_activity_group_code":"T","agv_week_pattern":"0000000001111111011100000000000000000000000000000000","agv_staff":"TBD Lecturer"}},"waitlist":{},"planned":{},"planned_unavailable":{},"exams":{},"alerts":[],"ical_subscriptions":{}},"semesters":{"Foundation Studies 2":{"semesterId":"202554","displayOrder":6,"description":"Foundation Studies 2","displayMode":"C"},"Foundation Studies 3":{"semesterId":"202574","displayOrder":6,"description":"Foundation Studies 3","displayMode":"C"},"Professional Term":{"semesterId":"202597","displayOrder":3,"description":"Professional Term","displayMode":"C"},"Winter":{"semesterId":"202545","displayOrder":4,"description":"Winter","displayMode":"C"},"Foundation Studies 1":{"semesterId":"202534","displayOrder":6,"description":"Foundation Studies 1","displayMode":"C"},"Summer":{"semesterId":"202505","displayOrder":2,"description":"Summer","displayMode":"E"},"Semester 1":{"semesterId":"202530","displayOrder":1,"description":"Semester 1","displayMode":"E"},"Semester 2":{"semesterId":"202560","displayOrder":5,"description":"Semester 2","displayMode":"C"}}};
+
+var adminFirstName = "null";
+var adminLastName = "null";
+var adminHasPowerLoginFunction = false;
+
+var isSwapEnabled = true;
+var isTrueWaitlistEnabled = false;
+
+var special_access_function_enabled = 'N';
+var special_access_function_field_allowed_value = '';
+var special_access_student_value = 'N';
+
+var no_act_enrolment_text = `No on campus classes for this unit, check unit outline`;
+var no_act_subject_text = `No classes are currently scheduled for this unit`;
+
+
+// AD-1378
+var showOffActivityGroup = false;
+var defaultActivityGroupView = "Flat";
+if(!defaultActivityGroupView || defaultActivityGroupView === "") {
+	defaultActivityGroupView = "Flat";
+}
+var displayActivityGroupTTDefault = true;
+
+var studentEnrolmentGroupEnabled = true;
+var showSubjectWithNoAct = true;
+
+
+if(special_access_function_enabled.toUpperCase()=='Y' && special_access_function_field_allowed_value!=special_access_student_value){
+	$.each(data.student.student_enrolment, function(i, sub){
+		if(sub.section_status!=undefined && sub.section_status!='OFF'){
+			sub.section_status='READ ONLY';
+		}
+		$.each(sub.groups, function(j, grp){
+			if(grp.status!='OFF'){
+				grp.status='READ ONLY';
+			}
+		});
+	});
+}
+
+
+var noActSubjectText = `No classes are currently scheduled for this unit`;
+var isConstraintCheckEnabled = true;
+var showAlternatives = false;
+var student_preference_instructions = `Select preferences for at least <minimum_preferences/> activities available to you by placing a number in the activity selection box. 1 indicates your first preference, 2 indicates your second preference etc.`;
+var external_activities_title = `Placement`;
+
+</script>
+
+</html>
